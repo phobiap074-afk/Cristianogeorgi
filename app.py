@@ -4,6 +4,7 @@ import re
 import logging
 from datetime import datetime
 from pathlib import Path
+import certifi
 
 import requests
 from flask import Flask, render_template, request, jsonify
@@ -209,4 +210,5 @@ if __name__ == "__main__":
     debug = _env("FLASK_DEBUG", "0") == "1"
     port = int(_env("PORT", "5001"))
     app.run(host="0.0.0.0", port=port, debug=debug)
+
 
