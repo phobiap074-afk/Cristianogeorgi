@@ -2,6 +2,7 @@ import os
 import json
 import re
 from datetime import datetime
+import certifi
 
 import requests
 from flask import Flask, render_template, request, jsonify
@@ -146,3 +147,4 @@ def submit():
     
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5001)), debug=True)
+
