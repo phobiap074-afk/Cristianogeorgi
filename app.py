@@ -99,7 +99,7 @@ def verify_gst():
         resp = requests.get(
             APPYFLOW_VERIFY_URL,
             params={"gstNo": gstn, "key_secret": APPYFLOW_KEY_SECRET},
-            timeout=15,
+            timeout=9,
         )
         resp.raise_for_status()
     except requests.RequestException as e:
@@ -177,3 +177,4 @@ if __name__ == "__main__":
     debug = os.getenv("FLASK_DEBUG", "0") == "1"
     port = int(os.getenv("PORT", "5001"))
     app.run(host="0.0.0.0", port=port, debug=debug)
+
