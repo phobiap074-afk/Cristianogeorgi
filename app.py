@@ -3,6 +3,7 @@ import json
 import re
 import logging
 from datetime import datetime
+from pathlib import Path
 
 import requests
 from flask import Flask, render_template, request, jsonify
@@ -36,10 +37,14 @@ log = logging.getLogger(__name__)
 # ---------------------------
 # APP
 # ---------------------------
-app = Flask(__name__, template_folder="templates", static_folder="static")
+BASE_DIR = Path(__file__).resolve().parent
+app = Flask(
+    __name__,
+    template_folder=str(BASE_DIR / "templates"),
+    static_folder=str(BASE_DIR / "static"),
+)
 
 if ENABLE_CORS and os.getenv("ENABLE_CORS", "0") == "1":
-    # Limit origins in prod: set API_ALLOWED_ORIGINS to comma-separated list
     origins = [o.strip() for o in os.getenv("API_ALLOWED_ORIGINS", "").split(",") if o.strip()]
     CORS(app, resources={r"/api/*": {"origins": origins or "*"}})
 
@@ -79,13 +84,16 @@ def get_submissions_collection():
 # ROUTES
 # ---------------------------
 
+@app.get("/favicon.ico")
+def favicon():
+    return app.send_static_file("favicon.ico")
+
 @app.get("/")
 def home():
     return render_template("index.html")
 
 @app.get("/healthz")
 def healthz():
-    # Simple healthcheck
     return jsonify({"status": "ok"}), 200
 
 @app.post("/api/verify_gst")
@@ -141,9 +149,9 @@ def submit():
     """
     Expects JSON:
     {
-      "gstn": "...",               # must be verified; stored uppercase
-      "legal_name": "...",         # read-only from verify
-      "firm_name": "...",          # read-only from verify
+      "gstn": "...",
+      "legal_name": "...",
+      "firm_name": "...",
       "name1": "...",
       "name2": "...",
       "contact": "..."
@@ -159,7 +167,6 @@ def submit():
     name2      = (data.get("name2") or "").strip()
     contact    = (data.get("contact") or "").strip()
 
-    # Guardrails: must have verified GSTIN and auto-filled names
     if not gstn or not legal_name or not firm_name or not name1 or not contact:
         return jsonify({"ok": False, "message": "Please verify GSTIN and fill Name 1 & Contact."}), 400
     if len(gstn) != 15 or not GSTIN_REGEX.match(gstn):
@@ -186,7 +193,7 @@ def submit():
 
     return jsonify({"ok": True, "id": str(result.inserted_id)})
 
-# Note: For local dev only.
+# Local dev only
 if __name__ == "__main__":
     debug = os.getenv("FLASK_DEBUG", "0") == "1"
     port = int(os.getenv("PORT", "5001"))
