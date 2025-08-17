@@ -205,8 +205,8 @@
           return show(data.message || "Save failed.", true);
         }
 
-        show("Saved successfully!");
-        resetForm();
+               show("Saved successfully!");
+        setTimeout(() => resetForm(), 1500);
       } catch (e) {
         show("Network error saving record.", true);
       }
@@ -214,3 +214,4 @@
   </script>
 </body>
 </html>
+
