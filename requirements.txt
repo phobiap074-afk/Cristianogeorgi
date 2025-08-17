@@ -1,4 +1,6 @@
-Flask
-requests
-pymongo
-dnspython
+Flask==3.0.3
+requests==2.32.3
+pymongo[srv]==4.8.0
+gunicorn==22.0.0
+# optional:
+flask-cors==4.0.1
