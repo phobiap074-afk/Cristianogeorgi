@@ -7,8 +7,8 @@
       "config": {
         "includeFiles": [
           "app.py",
-          "templates/",
-          "static/"
+          "templates/**",
+          "static/**"
         ]
       }
     }
