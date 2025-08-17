@@ -76,9 +76,10 @@ def get_submissions_collection():
     try:
         mongo_client = MongoClient(
             MONGODB_URI,
-            serverSelectionTimeoutMS=5000,
-            uuidRepresentation="standard",
-            appname="gst_app"
+            serverSelectionTimeoutMS=20000,
+            connectTimeoutMS=20000,
+            socketTimeoutMS=20000,
+            tls=True,
         )
         mongo_client.admin.command("ping")
         db = mongo_client[MONGO_DB_NAME]
@@ -208,3 +209,4 @@ if __name__ == "__main__":
     debug = _env("FLASK_DEBUG", "0") == "1"
     port = int(_env("PORT", "5001"))
     app.run(host="0.0.0.0", port=port, debug=debug)
+
