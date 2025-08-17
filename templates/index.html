@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Crompton Dealer Reward Program Registration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background: #f7f7fb; }
+    .container { 
+      max-width: 720px; 
+      margin: 48px auto; 
+      padding: 24px; 
+      background: #fff; 
+      border-radius: 16px; 
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      text-align: center; 
+    }
+    .logo { margin-bottom: 24px; }
+    .logo img { max-height: 80px; }
+    .row { display: grid; grid-template-columns: 1fr; gap: 12px; text-align: left; }
+    label { font-size: 13px; color: #333; }
+    input { width: 100%; padding: 12px 14px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; background: #fff; outline: none; transition: border 0.2s ease; }
+    input:focus { border-color: #6b79ff; }
+    input[readonly] { background: #f2f3f8; color: #222; }
+    .actions { display: flex; justify-content: center; gap: 10px; margin-top: 8px; }
+    button { border: 0; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-size: 14px; background: #6b79ff; color: #fff; }
+    button.secondary { background: #e5e7ef; color: #222; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .hint { font-size: 12px; color: #666; }
+    .alert { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #eef6ff; color: #0b3d91; display: none; text-align: center; }
+    .alert.error { background: #ffeef0; color: #8a1027; }
+    .muted { color: #666; font-size: 12px; text-align: center; margin-top: 16px; }
+    .disabled { opacity: 0.6; pointer-events: none; }
+    .small { font-size: 11px; color: #666; text-align: right; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Crompton Logo -->
+    <div class="logo">
+      <img src="/static/crompton_logo.png" alt="Crompton">
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="gstn">GSTIN</label>
+        <div class="grid-2">
+          <input id="gstn" maxlength="15" placeholder="Enter 15-character GSTIN (A–Z, 0–9)" autocomplete="off" />
+          <button id="verifyBtn" title="Verify GSTIN via AppyFlow">Verify</button>
+        </div>
+        <div class="hint">Click Verify to auto-fill Legal Name & Firm Name. Only verified GSTINs can be saved.</div>
+        <div class="small" id="gstnCount">0 / 15</div>
+      </div>
+
+      <div>
+        <label for="legalName">Legal Name (read-only)</label>
+        <input id="legalName" readonly />
+      </div>
+
+      <div>
+        <label for="firmName">Firm Name (read-only)</label>
+        <input id="firmName" readonly />
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label for="name1">Primary Name</label>
+          <input id="name1" placeholder="Enter first ticket holder name" />
+        </div>
+        <div>
+          <label for="name2">Secondary Name</label>
+          <input id="name2" placeholder="Enter second ticket holder name" />
+        </div>
+      </div>
+
+      <div>
+        <label for="contact">Phone</label>
+        <input id="contact" type="tel" placeholder="Enter phone number" pattern="[0-9]{10}" maxlength="10" />
+      </div>
+
+      <div class="actions">
+        <button id="saveBtn" class="disabled" title="Verify GSTIN first">Save</button>
+        <button class="secondary" id="resetBtn" type="button">Reset</button>
+      </div>
+
+      <div class="alert" id="notice"></div>
+    </div>
+
+    <p class="muted">
+      Legal Name = <code>taxpayerInfo.lgnm</code> &nbsp;|&nbsp;
+      Firm Name = <code>taxpayerInfo.tradeNam</code>
+    </p>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+    const notice = el("notice");
+    const gstnInput = el("gstn");
+    const saveBtn = el("saveBtn");
+    const verifyBtn = el("verifyBtn");
+    const count = el("gstnCount");
+
+    let verified = false;
+
+    function show(msg, isError=false) {
+      notice.textContent = msg;
+      notice.classList.toggle("error", isError);
+      notice.style.display = "block";
+      if (!isError) setTimeout(() => (notice.style.display = "none"), 3000);
+    }
+
+    function setVerified(v) {
+      verified = v;
+      saveBtn.classList.toggle("disabled", !verified);
+      saveBtn.title = verified ? "" : "Verify GSTIN first";
+    }
+
+    function resetForm() {
+      gstnInput.value = "";
+      el("legalName").value = "";
+      el("firmName").value = "";
+      el("name1").value = "";
+      el("name2").value = "";
+      el("contact").value = "";
+      count.textContent = "0 / 15";
+      setVerified(false);
+      notice.style.display = "none";
+    }
+
+    el("resetBtn").addEventListener("click", resetForm);
+
+    gstnInput.addEventListener("input", () => {
+      let v = gstnInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (v.length > 15) v = v.slice(0, 15);
+      if (v !== gstnInput.value) gstnInput.value = v;
+      count.textContent = `${gstnInput.value.length} / 15`;
+      el("legalName").value = "";
+      el("firmName").value = "";
+      setVerified(false);
+    });
+
+    function isValidGSTIN(s) {
+      return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][A-Z0-9]Z[A-Z0-9]$/.test(s);
+    }
+
+    verifyBtn.addEventListener("click", async () => {
+      const gstn = gstnInput.value.trim();
+      if (gstn.length !== 15) return show("GSTIN must be exactly 15 characters.", true);
+      if (!isValidGSTIN(gstn)) return show("GSTIN format looks invalid.", true);
+
+      try {
+        const r = await fetch("/api/verify_gst", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gstn }),
+        });
+        const data = await r.json();
+
+        if (!data.ok) {
+          el("legalName").value = "";
+          el("firmName").value = "";
+          setVerified(false);
+          return show(data.message || "Verification failed.", true);
+        }
+
+        el("legalName").value = data.legal_name || "";
+        el("firmName").value = data.firm_name || "";
+        setVerified(true);
+        show("GSTIN verified and names filled.");
+      } catch (e) {
+        setVerified(false);
+        show("Network error verifying GSTIN.", true);
+      }
+    });
+
+    saveBtn.addEventListener("click", async () => {
+      if (!verified) return show("Please verify GSTIN successfully before saving.", true);
+
+      const payload = {
+        gstn: gstnInput.value.trim(),
+        legal_name: el("legalName").value.trim(),
+        firm_name: el("firmName").value.trim(),
+        name1: el("name1").value.trim(),
+        name2: el("name2").value.trim(),
+        contact: el("contact").value.trim(),
+      };
+
+      if (!payload.gstn || !payload.legal_name || !payload.firm_name || !payload.name1 || !payload.contact) {
+        return show("Please verify GSTIN and fill required fields (Dealer Name, Phone).", true);
+      }
+
+      try {
+        const r = await fetch("/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await r.json();
+
+        if (!data.ok) {
+          if (r.status === 409 || data.code === "duplicate") {
+            return show("This GSTIN already exists in the system.", true);
+          }
+          return show(data.message || "Save failed.", true);
+        }
+
+        show("Saved successfully!");
+        resetForm();
+      } catch (e) {
+        show("Network error saving record.", true);
+      }
+    });
+  </script>
+</body>
+</html>
