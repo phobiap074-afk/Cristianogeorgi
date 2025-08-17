@@ -21,8 +21,8 @@ except Exception:
 # ---------------------------
 
 APPYFLOW_VERIFY_URL = os.getenv("APPYFLOW_VERIFY_URL", "https://appyflow.in/api/verifyGST")
-APPYFLOW_KEY_SECRET = os.getenv("APPYFLOW_KEY_SECRET")  # MUST be set in Railway
-MONGODB_URI = os.getenv("MONGODB_URI")  # MUST be set in Railway
+APPYFLOW_KEY_SECRET = os.getenv("APPYFLOW_KEY_SECRET")
+MONGODB_URI = os.getenv("MONGODB_URI")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "gst_app")
 MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", "submissions")
 
@@ -34,7 +34,7 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 log = logging.getLogger(__name__)
 
 # ---------------------------
-# APP + DB CLIENT
+# APP
 # ---------------------------
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
@@ -43,27 +43,37 @@ if ENABLE_CORS and os.getenv("ENABLE_CORS", "0") == "1":
     origins = [o.strip() for o in os.getenv("API_ALLOWED_ORIGINS", "").split(",") if o.strip()]
     CORS(app, resources={r"/api/*": {"origins": origins or "*"}})
 
-# Early hard-fail if secrets are missing
-if not APPYFLOW_KEY_SECRET:
-    raise RuntimeError("Missing APPYFLOW_KEY_SECRET env var.")
-if not MONGODB_URI:
-    raise RuntimeError("Missing MONGODB_URI env var.")
+# ---------------------------
+# LAZY MONGO CLIENT
+# ---------------------------
+mongo_client = None
+submissions = None
 
-try:
-    mongo_client = MongoClient(
-        MONGODB_URI,
-        serverSelectionTimeoutMS=8000,
-        uuidRepresentation="standard",
-        appname="gst_app"
-    )
-    mongo_db = mongo_client[MONGO_DB_NAME]
-    submissions = mongo_db[MONGO_COLLECTION]
-    submissions.create_index([("gstn", 1)], unique=True)
-    # Force initial server selection to fail fast on bad URIs
-    mongo_client.admin.command("ping")
-    log.info("Connected to MongoDB and ensured indexes.")
-except Exception as e:
-    raise RuntimeError(f"Failed to connect to MongoDB. Check MONGODB_URI. Details: {e}")
+def get_submissions_collection():
+    global mongo_client, submissions
+
+    if submissions is not None:
+        return submissions
+
+    if not MONGODB_URI:
+        raise RuntimeError("Missing MONGODB_URI env var.")
+
+    try:
+        mongo_client = MongoClient(
+            MONGODB_URI,
+            serverSelectionTimeoutMS=5000,
+            uuidRepresentation="standard",
+            appname="gst_app"
+        )
+        mongo_client.admin.command("ping")
+        db = mongo_client[MONGO_DB_NAME]
+        submissions = db[MONGO_COLLECTION]
+        submissions.create_index([("gstn", 1)], unique=True)
+        log.info("MongoDB ready.")
+        return submissions
+    except Exception as e:
+        log.exception("Mongo init failed")
+        raise RuntimeError(f"Failed to connect to MongoDB. Details: {e}")
 
 # ---------------------------
 # ROUTES
@@ -75,7 +85,7 @@ def home():
 
 @app.get("/healthz")
 def healthz():
-    # Simple healthcheck for Railway
+    # Simple healthcheck
     return jsonify({"status": "ok"}), 200
 
 @app.post("/api/verify_gst")
@@ -95,11 +105,14 @@ def verify_gst():
     if not GSTIN_REGEX.match(gstn):
         return jsonify({"ok": False, "message": "GSTIN format looks invalid."}), 400
 
+    if not APPYFLOW_KEY_SECRET:
+        return jsonify({"ok": False, "message": "Server missing APPYFLOW_KEY_SECRET."}), 500
+
     try:
         resp = requests.get(
             APPYFLOW_VERIFY_URL,
             params={"gstNo": gstn, "key_secret": APPYFLOW_KEY_SECRET},
-            timeout=9,
+            timeout=9,  # fit within Vercel free 10s function limit
         )
         resp.raise_for_status()
     except requests.RequestException as e:
@@ -163,7 +176,8 @@ def submit():
     }
 
     try:
-        result = submissions.insert_one(doc)
+        col = get_submissions_collection()
+        result = col.insert_one(doc)
     except DuplicateKeyError:
         return jsonify({"ok": False, "message": "This GSTIN already exists.", "code": "duplicate"}), 409
     except Exception as e:
@@ -172,9 +186,8 @@ def submit():
 
     return jsonify({"ok": True, "id": str(result.inserted_id)})
 
-# Note: In Railway we’ll run via gunicorn. Keeping this for local dev only.
+# Note: For local dev only.
 if __name__ == "__main__":
     debug = os.getenv("FLASK_DEBUG", "0") == "1"
     port = int(os.getenv("PORT", "5001"))
     app.run(host="0.0.0.0", port=port, debug=debug)
-
