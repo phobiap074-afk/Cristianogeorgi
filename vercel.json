@@ -5,24 +5,15 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "pythonVersion": "3.11",
         "includeFiles": [
           "app.py",
-          "templates/**",
-          "static/**"
+          "templates/",
+          "static/"
         ]
       }
     }
   ],
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 10,
-      "memory": 1024
-    }
-  },
   "routes": [
-    { "src": "^/favicon\\.(ico|png)$", "dest": "/static/favicon.$1" },
-    { "src": "^/static/(.*)$", "dest": "/static/$1" },
     { "src": "^/api/(.*)$", "dest": "/api/index.py" },
     { "src": "^(?!/api/).*$", "dest": "/api/index.py" }
   ]
