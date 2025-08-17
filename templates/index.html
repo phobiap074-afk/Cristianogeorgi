@@ -5,34 +5,118 @@
   <title>Crompton Dealer Reward Program Registration</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    body { margin: 0; background: #f7f7fb; }
-    .container { 
-      max-width: 720px; 
-      margin: 48px auto; 
-      padding: 24px; 
-      background: #fff; 
-      border-radius: 16px; 
-      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-      text-align: center; 
+    /* --- Mobile-friendly CSS (no backend-facing changes) --- */
+    :root {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      --primary: #6b79ff;
+      --bg: #f7f7fb;
+      --text: #222;
+      --muted: #666;
+      --border: #ddd;
+      --radius: 16px;
     }
+
+    html { font-size: 16px; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+
+    .container {
+      width: min(100% - 32px, 720px);
+      margin: 24px auto;
+      padding: 16px;
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    @media (min-width: 600px) {
+      .container { margin: 48px auto; padding: 24px; }
+    }
+
     .logo { margin-bottom: 24px; }
-    .logo img { max-height: 80px; }
+    .logo img { height: clamp(48px, 10vw, 80px); width: auto; }
+
     .row { display: grid; grid-template-columns: 1fr; gap: 12px; text-align: left; }
-    label { font-size: 13px; color: #333; }
-    input { width: 100%; padding: 12px 14px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; background: #fff; outline: none; transition: border 0.2s ease; }
-    input:focus { border-color: #6b79ff; }
+    label { font-size: 0.875rem; color: #333; }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 16px; /* prevents iOS zoom on focus */
+      background: #fff;
+      outline: none;
+      transition: border-color .2s ease, box-shadow .2s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(107,121,255,0.15); }
     input[readonly] { background: #f2f3f8; color: #222; }
-    .actions { display: flex; justify-content: center; gap: 10px; margin-top: 8px; }
-    button { border: 0; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-size: 14px; background: #6b79ff; color: #fff; }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 8px;
+      flex-wrap: wrap; /* allow wrap on small screens */
+    }
+
+    button {
+      border: 0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      background: var(--primary);
+      color: #fff;
+      line-height: 1;
+      min-height: 44px; /* touch target */
+      min-width: 44px;
+      transition: transform .05s ease, filter .15s ease;
+    }
+    button:hover { filter: brightness(0.98); }
+    button:active { transform: translateY(1px); }
     button.secondary { background: #e5e7ef; color: #222; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .hint { font-size: 12px; color: #666; }
-    .alert { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #eef6ff; color: #0b3d91; display: none; text-align: center; }
+
+    /* General two-column grid: stack on mobile, split on wider screens */
+    .grid-2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 520px) {
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* Special handling for the first .grid-2 (GSTIN + Verify) */
+    .row > div:first-child .grid-2 > button { width: 100%; }
+    @media (min-width: 520px) {
+      .row > div:first-child .grid-2 { grid-template-columns: 1fr auto; }
+      .row > div:first-child .grid-2 > button { width: auto; }
+    }
+
+    .hint { font-size: 0.8125rem; color: var(--muted); }
+    .alert {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #eef6ff;
+      color: #0b3d91;
+      display: none;
+      text-align: center;
+    }
     .alert.error { background: #ffeef0; color: #8a1027; }
-    .muted { color: #666; font-size: 12px; text-align: center; margin-top: 16px; }
+
+    .muted { color: var(--muted); font-size: 0.875rem; text-align: center; margin-top: 16px; }
     .disabled { opacity: 0.6; pointer-events: none; }
-    .small { font-size: 11px; color: #666; text-align: right; }
+    .small { font-size: 0.75rem; color: var(--muted); text-align: right; }
+
+    img { max-width: 100%; height: auto; }
+    code { background: #f4f5f9; padding: 2px 6px; border-radius: 6px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+    @supports (padding: max(0px)) {
+      body { padding-bottom: env(safe-area-inset-bottom); }
+    }
   </style>
 </head>
 <body>
@@ -47,9 +131,9 @@
         <label for="gstn">GSTIN</label>
         <div class="grid-2">
           <input id="gstn" maxlength="15" placeholder="Enter 15-character GSTIN (A–Z, 0–9)" autocomplete="off" />
-          <button id="verifyBtn" title="Verify GSTIN via AppyFlow">Verify</button>
+          <button id="verifyBtn" title="Verify GSTIN via AppyFlow" type="button">Verify</button>
         </div>
-        <div class="hint">Click Verify to auto-fill Legal Name & Firm Name. Only verified GSTINs can be saved.</div>
+        <div class="hint">Click Verify to auto-fill Legal Name &amp; Firm Name. Only verified GSTINs can be saved.</div>
         <div class="small" id="gstnCount">0 / 15</div>
       </div>
 
@@ -66,25 +150,25 @@
       <div class="grid-2">
         <div>
           <label for="name1">Primary Name</label>
-          <input id="name1" placeholder="Enter first ticket holder name" />
+          <input id="name1" placeholder="Enter first ticket holder name" autocomplete="name" />
         </div>
         <div>
           <label for="name2">Secondary Name</label>
-          <input id="name2" placeholder="Enter second ticket holder name" />
+          <input id="name2" placeholder="Enter second ticket holder name" autocomplete="nickname" />
         </div>
       </div>
 
       <div>
         <label for="contact">Phone</label>
-        <input id="contact" type="tel" placeholder="Enter phone number" pattern="[0-9]{10}" maxlength="10" />
+        <input id="contact" type="tel" placeholder="Enter phone number" pattern="[0-9]{10}" maxlength="10" inputmode="numeric" autocomplete="tel" />
       </div>
 
       <div class="actions">
-        <button id="saveBtn" class="disabled" title="Verify GSTIN first">Save</button>
+        <button id="saveBtn" class="disabled" title="Verify GSTIN first" type="button">Save</button>
         <button class="secondary" id="resetBtn" type="button">Reset</button>
       </div>
 
-      <div class="alert" id="notice"></div>
+      <div class="alert" id="notice" role="status" aria-live="polite"></div>
     </div>
 
     <p class="muted">
@@ -205,7 +289,7 @@
           return show(data.message || "Save failed.", true);
         }
 
-               show("Saved successfully!");
+        show("Saved successfully!");
         setTimeout(() => resetForm(), 1500);
       } catch (e) {
         show("Network error saving record.", true);
@@ -214,4 +298,3 @@
   </script>
 </body>
 </html>
-
